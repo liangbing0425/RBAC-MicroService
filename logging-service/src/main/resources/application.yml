@@ -1,0 +1,32 @@
+# application.yml
+server:
+  port: 8083
+spring:
+  application:
+    name: logging-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+      config:
+        import: optional:nacos:logging-service.yaml
+        import-check:
+          enabled: false
+        server-addr: localhost:8848
+        file-extension: yml
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/shuzimali?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8
+    username: root
+    password: root
+  rocketmq:
+    name-server: localhost:9876  # RocketMQ地址
+    consumer:
+      group: logging-service-group
+
+# MyBatis配置
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.loggingservice.entity
+  configuration:
+    map-underscore-to-camel-case: true
