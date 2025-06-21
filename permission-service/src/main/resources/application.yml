@@ -1,0 +1,45 @@
+# application.yml
+server:
+  port: 8082
+spring:
+  application:
+    name: permission-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+      config:
+        import: optional:nacos:permission-service.yaml
+        import-check:
+          enabled: false
+        server-addr: localhost:8848
+        file-extension: yml
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/shuzimali?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8
+    username: root
+    password: root
+
+# MyBatis配置
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.permissionservice.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+# Seata配置（参与分布式事务）
+seata:
+  enabled: true
+  application-id: permission-service
+  tx-service-group: my_test_tx_group
+  client:
+    rm:
+      async-commit-buffer-limit: 10000
+      report-success-enable: true
+    tm:
+      commit-retry-count: 5
+      rollback-retry-count: 5
+  service:
+    vgroup-mapping:
+      my_test_tx_group: default
+    default-grouplist: 127.0.0.1:8091
