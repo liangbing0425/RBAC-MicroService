@@ -1,0 +1,61 @@
+server:
+  port: 8081
+spring:
+  application:
+    name: user-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+      config:
+        import: optional:nacos:user-service.yaml
+        import-check:
+          enabled: false
+        server-addr: localhost:8848
+        file-extension: yml
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/shuzimali?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8
+    username: root
+    password: root
+  rocketmq:
+    name-server: localhost:9876
+    producer:
+      group: user-service-producer
+
+# 分库分表配置
+shardingsphere:
+  sharding:
+    tables:
+      users:
+        actual-data-nodes: db$->{0..1}.users_$->{0..1}
+        table-strategy:
+          standard:
+            sharding-column: user_id
+            precise-algorithm-class-name: com.userservice.util.ShardingKeyGenerator
+    key-generator:
+      type: SNOWFLAKE
+      column: user_id
+
+# Seata
+seata:
+  enabled: true
+  application-id: user-service
+  tx-service-group: my_test_tx_group
+  client:
+    rm:
+      async-commit-buffer-limit: 10000
+      report-success-enable: true
+      table-meta-check-enable: true
+    tm:
+      commit-retry-count: 5
+      rollback-retry-count: 5
+  service:
+    vgroup-mapping:
+      my_test_tx_group: default
+    default-grouplist: 127.0.0.1:8091
+
+rocketmq:
+  name-server: 127.0.0.1:9876  # RocketMQ 服务地址
+  producer:
+    group: shuzimali-producer-group  # 生产者组名
