@@ -11,4 +11,5 @@ public interface OperationLogService {
     List<OperationLog> getAllLogs();
     List<OperationLog> getLogsByUserId(Long userId);
     List<OperationLog> getLogsByAction(String action);
+    OperationLog getByMsgId(String msgId);
 }

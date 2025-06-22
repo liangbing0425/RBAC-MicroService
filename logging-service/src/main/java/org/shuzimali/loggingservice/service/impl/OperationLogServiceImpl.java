@@ -16,7 +16,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, OperationLog> implements OperationLogService {
 
-
+    @Override
+    public OperationLog getByMsgId(String msgId) {
+        return getOne(
+                new LambdaQueryWrapper<OperationLog>().eq(OperationLog::getMsgId, msgId)
+        );
+    }
     @Override
     public void saveLog(OperationLog log) {
         log.setGmtCreate(LocalDateTime.now());

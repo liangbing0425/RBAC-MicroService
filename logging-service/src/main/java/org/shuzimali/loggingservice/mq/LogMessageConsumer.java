@@ -22,23 +22,32 @@ public class LogMessageConsumer implements RocketMQListener<String> {
     @Override
     public void onMessage(String message) {
         try {
-            // 解析消息体（JSON格式）
+            // 1. 解析消息并提取唯一ID
             Map<String, Object> logMap = JSON.parseObject(message, Map.class);
+            String msgId = logMap.get("msgId").toString();
 
-            // 转换为操作日志实体
+            // 2. 幂等性校验（通过数据库唯一索引）
+            OperationLog existLog = operationLogService.getByMsgId(msgId);
+            if (existLog != null) {
+                log.warn("重复消费消息，msgId: {}", msgId);
+                return;
+            }
+
+            // 3. 转换为操作日志实体并保存
             OperationLog operationLog = new OperationLog();
             operationLog.setUserId(Long.parseLong(logMap.get("userId").toString()));
             operationLog.setAction(logMap.get("action").toString());
             operationLog.setIp(logMap.get("ip").toString());
             operationLog.setDetail(logMap.get("detail").toString());
+            operationLog.setMsgId(msgId);
 
-            // 保存日志到数据库
             operationLogService.saveLog(operationLog);
+            log.info("消费日志消息成功，msgId: {}", msgId);
 
-            log.info("消费日志消息成功: {}", message);
         } catch (Exception e) {
-            log.error("消费日志消息失败: {}", message, e);
-            // 可在此添加重试逻辑或死信队列处理
+            log.error("消费日志消息失败，message: {}, 异常: {}", message, e);
+            // 抛出异常触发RocketMQ自动重试
+            throw new RuntimeException("日志消息消费失败", e);
         }
     }
 }

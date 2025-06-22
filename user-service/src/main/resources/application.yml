@@ -4,6 +4,8 @@ spring:
   application:
     name: user-service
   cloud:
+    seata:
+      tx-service-group: my_test_tx_group  # Seata事务组
     nacos:
       discovery:
         server-addr: localhost:8848
@@ -13,29 +15,54 @@ spring:
           enabled: false
         server-addr: localhost:8848
         file-extension: yml
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/shuzimali?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8
-    username: root
-    password: root
   rocketmq:
-    name-server: localhost:9876
     producer:
       group: user-service-producer
+      send-message-timeout: 5000
+      retry-times-when-send-async-failed: 3
+    consumer:
+        consume-timeout: 60000
+        suspend-current-queue-time-millis: 1000
+        enable-message-trace: true # 开启消息轨迹追踪
+    name-server: localhost:9876
+
 
 # 分库分表配置
 shardingsphere:
-  sharding:
-    tables:
-      users:
-        actual-data-nodes: db$->{0..1}.users_$->{0..1}
-        table-strategy:
-          standard:
-            sharding-column: user_id
-            precise-algorithm-class-name: com.userservice.util.ShardingKeyGenerator
-    key-generator:
-      type: SNOWFLAKE
-      column: user_id
+  datasource:
+    names: ds0, ds1, ds_transaction
+    ds0:
+      type: com.zaxxer.hikari.HikariDataSource
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      jdbc-url: jdbc:mysql://localhost:3306/shuzimali0?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8
+      username: root
+      password: root
+    ds1:
+      type: com.zaxxer.hikari.HikariDataSource
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      jdbc-url: jdbc:mysql://localhost:3306/shuzimali1?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8
+      username: root
+      password: root
+    ds_transaction:
+      type: com.zaxxer.hikari.HikariDataSource
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      jdbc-url: jdbc:mysql://localhost:3306/shuzimali?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8
+      username: root
+      password: root
+    sharding:
+      tables:
+        users:  # 对 user 表进行分库分表
+          actual-data-nodes: ds$->{0..1}.users_$->{0..1}  # 分库分表规则（2库 × 2表）
+          database-strategy:
+            inline:
+              sharding-column: user_id  # 按 user_id 分库
+              algorithm-expression: ds$->{user_id % 2}  # 取模分库
+          table-strategy:
+            inline:
+              sharding-column: user_id  # 按 user_id 分表
+              algorithm-expression: users_$->{user_id % 2}  # 取模分表
+    props:
+      sql.show: true  # 打印SQL日志
 
 # Seata
 seata:
@@ -54,11 +81,6 @@ seata:
     vgroup-mapping:
       my_test_tx_group: default
     default-grouplist: 127.0.0.1:8091
-
-rocketmq:
-  name-server: 127.0.0.1:9876  # RocketMQ 服务地址
-  producer:
-    group: shuzimali-producer-group  # 生产者组名
 
 springdoc:
   api-docs:

@@ -23,6 +23,11 @@ spring:
     name-server: localhost:9876  # RocketMQ地址
     consumer:
       group: logging-service-group
+      max-retry-times: 16       # 消费端最大重试次数
+      message-backoff-times: 1000  # 重试间隔(毫秒)
+      consume-thread-min: 16      # 消费线程数
+      consume-thread-max: 32      # 最大消费线程数
+      consume-message-timeout: 30 # 消费超时时间(分钟)
 
 # MyBatis配置
 mybatis-plus:

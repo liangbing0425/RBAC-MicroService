@@ -14,7 +14,7 @@ CREATE TABLE user_roles (
 );
 
 -- 3. 用户表（水平分表基础结构）
-CREATE TABLE users (
+CREATE TABLE users_1 (
   user_id BIGINT PRIMARY KEY,
   username VARCHAR(50),
   password VARCHAR(255),
@@ -36,3 +36,22 @@ CREATE TABLE operation_logs (
 INSERT INTO roles (role_id, role_code) VALUES (1, 'super_admin');
 INSERT INTO roles (role_id, role_code) VALUES (2, 'user');
 INSERT INTO roles (role_id, role_code) VALUES (3, 'admin');
+
+
+-- 在用户服务数据库中创建事务日志表
+CREATE TABLE transaction_log (
+                                 log_id VARCHAR(50) PRIMARY KEY,        -- 事务ID/消息ID（UUID）
+                                 business_key VARCHAR(100) NOT NULL,    -- 业务主键（如用户ID）
+                                 business_type VARCHAR(50) NOT NULL,    -- 业务类型（REGISTER/UPDATE_USER等）
+                                 transaction_status VARCHAR(20) NOT NULL, -- 事务状态：PENDING/COMMITTED/ROLLBACKED
+                                 gmt_create TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                 gmt_modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                 remark VARCHAR(255),                    -- 备注信息
+                                 INDEX idx_business_key (business_key),  -- 业务主键索引
+                                 INDEX idx_transaction_status (transaction_status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='轻量级事务日志表';
+
+-- 在operation_logs表中添加msg_id字段及唯一索引
+ALTER TABLE operation_logs
+    ADD COLUMN msg_id VARCHAR(50) COMMENT '消息唯一ID',
+    ADD UNIQUE KEY uk_msg_id (msg_id);
